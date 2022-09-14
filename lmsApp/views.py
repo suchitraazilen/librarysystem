@@ -64,44 +64,6 @@ def save_register(request):
             
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
-@login_required
-def update_profile(request):
-    context = context_data(request)
-    context['page_title'] = 'Update Profile'
-    user = User.objects.get(id = request.user.id)
-    if not request.method == 'POST':
-        form = forms.UpdateProfile(instance=user)
-        context['form'] = form
-        print(form)
-    else:
-        form = forms.UpdateProfile(request.POST, instance=user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Profile has been updated")
-            return redirect("profile-page")
-        else:
-            context['form'] = form
-            
-    return render(request, 'manage_profile.html',context)
-
-@login_required
-def update_password(request):
-    context =context_data(request)
-    context['page_title'] = "Update Password"
-    if request.method == 'POST':
-        form = forms.UpdatePasswords(user = request.user, data= request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request,"Your Account Password has been updated successfully")
-            update_session_auth_hash(request, form.user)
-            return redirect("profile-page")
-        else:
-            context['form'] = form
-    else:
-        form = forms.UpdatePasswords(request.POST)
-        context['form'] = form
-    return render(request,'update_password.html',context)
-
 # Create your views here.
 def login_page(request):
     context = context_data(request)
