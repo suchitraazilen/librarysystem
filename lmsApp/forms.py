@@ -2,6 +2,8 @@ from datetime import datetime
 from random import random
 from django import forms
 from lmsApp import models
+from django.forms import ModelForm
+
 
 from django.contrib.auth.forms import UserCreationForm,PasswordChangeForm, UserChangeForm
 from django.contrib.auth.models import User
@@ -140,17 +142,25 @@ class SaveBook(forms.ModelForm):
         except:
             return isbn
         raise forms.ValidationError("ISBN already exists on the Database.")
-  
+
+class UserModelForm(ModelForm):
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            ]
+
 class SaveStudent(forms.ModelForm):
     code = forms.CharField(max_length=250)
-    first_name = forms.CharField(max_length=250)
-    last_name = forms.CharField(max_length=250)
     gender = forms.CharField(max_length=250)
     contact = forms.CharField(max_length=250)
     email = forms.CharField(max_length=250)
     department = forms.CharField(max_length=250)
     address = forms.CharField(max_length=500)
-    status = forms.CharField(max_length=2)
+    
 
     class Meta:
         model = models.Students
