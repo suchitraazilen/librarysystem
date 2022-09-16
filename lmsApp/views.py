@@ -17,13 +17,13 @@ from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.mail import send_mail
+from django.core.mail import send_mail,EmailMessage
 from django.contrib import messages
 from django.conf import settings
 
 def context_data(request):
     fullpath = request.get_full_path()
-    abs_uri = request.build_absolute_uri()
+    abs_uri = request.build_absolute_uri() #to get the full/absolute URL
     abs_uri = abs_uri.split(fullpath)[0]
     context = {
         'system_host' : abs_uri,
@@ -63,6 +63,44 @@ def save_register(request):
                     resp['msg'] += str(f"[{field.name}] {error}.")
             
     return HttpResponse(json.dumps(resp), content_type="application/json")
+
+@login_required
+def update_profile(request):
+    context = context_data(request)
+    context['page_title'] = 'Update Profile'
+    user = User.objects.get(id = request.user.id)
+    if not request.method == 'POST':
+        form = forms.UpdateProfile(instance=user)
+        context['form'] = form
+        print(form)
+    else:
+        form = forms.UpdateProfile(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile has been updated")
+            return redirect("profile-page")
+        else:
+            context['form'] = form
+            
+    return render(request, 'manage_profile.html',context)
+
+@login_required
+def update_password(request):
+    context =context_data(request)
+    context['page_title'] = "Update Password"
+    if request.method == 'POST':
+        form = forms.UpdatePasswords(user = request.user, data= request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request,"Your Account Password has been updated successfully")
+            update_session_auth_hash(request, form.user)
+            return redirect("profile-page")
+        else:
+            context['form'] = form
+    else:
+        form = forms.UpdatePasswords(request.POST)
+        context['form'] = form
+    return render(request,'update_password.html',context)
 
 # Create your views here.
 def login_page(request):
@@ -111,13 +149,6 @@ def logout_user(request):
     logout(request)
     return redirect('/login')
     
-@login_required
-def profile(request):
-    context = context_data(request)
-    context['page'] = 'profile'
-    context['page_title'] = "Profile"
-    return render(request,'profile.html', context)
-
 @login_required
 def users(request):
     context = context_data(request)
@@ -414,20 +445,36 @@ def delete_student(request, pk = None):
 
 @login_required
 def setpassword(request):
-    form = PasswordResetForm()
-
     if request.method == 'POST':
         form = PasswordResetForm(request.POST)
+        print(form['email'])
         if form.is_valid():
-            email = request.POST['email']
-            subject="Welcome to NewMoon Library"
-            message = "Hello student you can create your password here and can login to your portal"
-            from_email=settings.EMAIL_HOST_USER 
-            recipient_list=[email]
-            send_mail(subject,message,from_email,recipient_list,fail_silently=False)
-            form.save()
-            messages.info(request, "blaaablaablaa")
-            return redirect('change-password.html')
+            # user=form.save()
+            domain = get_current_site(request).domain
+            email_body = render_to_string('password_set.html', {
+                'user': user,
+                'domain': domain,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': set_password_token.make_token(user),
+            }) 
+            email_subject='Create your password'
+            recipient=request.POST['email']
+            email= EmailMessage(
+                email_subject,
+                email_body,
+                'noreply@ilbrary.com',
+                (recipient,)
+            )
+            messages.success(request,"success")
+            email.send(fail_silently=False)
 
-    return render(request,'create_password.html',{'form': form})
+            return HttpResponse("email sent successfully")
+           
+        else:
+            return HttpResponse(form.errors)
+    else:
+        form = PasswordResetForm()
+        return render(request,'create_password.html', {'form': form})
+
+   
     
