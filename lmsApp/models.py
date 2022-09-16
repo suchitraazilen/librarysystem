@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth.base_user import BaseUserManager
 
 
-
 # Create your models here.
 class Category(models.Model):
     name = models.CharField(max_length=250)
@@ -43,27 +42,25 @@ class Books(models.Model):
 
 
 class Students(models.Model):
+    user= models.OneToOneField(User,on_delete= models.CASCADE)
     code = models.CharField(max_length=250)
-    first_name = models.CharField(max_length=250)
-    last_name = models.CharField(max_length=250)
     gender = models.CharField(max_length=20, choices=(('Male','Male'), ('Female','Female')), default = 'Male')
     contact = models.CharField(max_length=250)
-    email = models.CharField(max_length=250)
+    department = models.CharField(max_length=200)
+    alt_email = models.CharField(max_length=250)
     address = models.CharField(max_length=250)
-    status = models.CharField(max_length=2, choices=(('1','Active'), ('2','Inactive')), default = 1)
     delete_flag = models.IntegerField(default = 0)
     date_added = models.DateTimeField(default = timezone.now)
-    date_created = models.DateTimeField(auto_now = True)
+    date_created = models.DateTimeField(auto_now_add = True)
+    date_modified= models.DateTimeField(auto_now = True)
 
     class Meta:
         verbose_name_plural = "List of Students"
 
     def __str__(self):
-        return str(f"{self.code} - {self.first_name}{self.last_name}")
+        return str(f"{self.code} - {self.user.get_full_name()}")
 
-    def name(self):
-        return str(f"{self.first_name}{self.last_name}")
-
+    
 class Borrow(models.Model):
     student = models.ForeignKey(Students, on_delete= models.CASCADE, related_name="student_id_fk")
     book = models.ForeignKey(Books, on_delete= models.CASCADE, related_name="book_id_fk")
